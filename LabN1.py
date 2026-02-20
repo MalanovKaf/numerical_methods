@@ -69,12 +69,3 @@ def delta_max(a,b,N_array,m,z):
     plt.ylabel("Погрешность")
     plt.title("Логарифмический масштаб")
     plt.show()
-
-
-N=np.array([5,10,50,100,150])
-a,b=0,10
-
-#interpolation(a,b,10,0,0)
-interpolation(a,b,100,1,0)
-#interpolation(a,b,100,0,1)
-#interpolation(a,b,150,1,1)
