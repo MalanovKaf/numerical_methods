@@ -69,3 +69,6 @@ def delta_max(a,b,N_array,m,z):
     plt.ylabel("Погрешность")
     plt.title("Логарифмический масштаб")
     plt.show()
+
+
+#def intorpolation_loc(a,b,N,m,z):
