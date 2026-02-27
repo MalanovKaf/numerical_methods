@@ -71,4 +71,37 @@ def delta_max(a,b,N_array,m,z):
     plt.show()
 
 
-#def intorpolation_loc(a,b,N,m,z):
+def intorpolation_loc(a,b,N,m):
+    X=nodes(a,b,N,m)
+    Y=f(X)
+    x_test = (X[1:] + X[:-1]) / 2
+
+    y_local = np.zeros_like(x_test)
+
+    N_local = 10
+    half = N_local // 2
+
+    for i, x_point in enumerate(x_test):
+        idx = np.argmin(np.abs(X - x_point))
+
+        start = idx - half
+        end = idx + half
+
+        if start < 0:
+            end = end - start
+            start = 0
+        if end > len(X):
+            start = start - (end - len(X))
+            end = len(X)
+
+        X_local = X[start:end]
+        Y_local = Y[start:end]
+
+        y_local[i] = Lagrange(X_local, Y_local, np.array([x_point]))[0]
+    plt.plot(X, Y, "-o", label="Искомая функция")
+    plt.plot(x_test, y_local, "-x", label="Полинома Лагранжа локально")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.legend()
+    plt.title("Два совмещенных графика и легенда")
+    plt.show()
