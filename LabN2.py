@@ -101,11 +101,16 @@ def compare_diff_plot(F, diff_type,N):
 
 
 def delta(a,b,N_array,diff_type):
+
     delta1 = np.zeros(len(N_array))
     delta2 = np.zeros(len(N_array))
+
+    h_array=np.zeros(len(N_array))
+
     if diff_type == "first":
         for i in range (len(N_array)):
             F = create_data_grid(a, b, N_array[i])
+            h=np.linspace(a,b,N_array[i],retstep=True)[1]
 
             right_diff = diff_1_right(F)
             central_diff = diff_1_central(F)
@@ -118,9 +123,33 @@ def delta(a,b,N_array,diff_type):
 
             delta1[i] = max(abs(y_analytical_right - right_diff[:,1]))
             delta2[i] = max(abs(y_analytical_central - central_diff[:, 1]))
+            h_array[i]=h
 
-        plt.loglog(N_array, delta1, '-o',label='Правая разность')
-        plt.loglog(N_array, delta2, '-s',label='Центральная разность')
+        # Определение порядков точности через линейный график как коэф. угла наклона
+        log_h = np.log(h_array)
+        log_delta1 = np.log(delta1)
+        log_delta2 = np.log(delta2)
+
+        # Аппроксимация прямой: log(δ) = p*log(h) + const
+        p1 = np.polyfit(log_h, log_delta1, 1)[0]
+        p2 = np.polyfit(log_h, log_delta2, 1)[0]
+        print(f"Порядок точности для правой разности: {abs(p1):.2f}")
+        print(f"Порядок точности для центральной разности: {abs(p2):.2f}")
+
+        # Оценка максимального значение третьей производной
+        x_test = np.linspace(a, b, 1000)
+        f_third_max = max(abs((f_second_diff_analytical(x_test + 1e-5) -f_second_diff_analytical(x_test - 1e-5)) / (2e-5)))
+        epsilon = 1e-15
+
+        h_opt_theory = (epsilon / f_third_max) ** (1 / 3)
+        h_opt_fact = h_array[np.argmin(delta2)]
+
+        plt.loglog(h_array, delta1, '-o',label='Правая разность')
+        plt.loglog(h_array, delta2, '-s',label='Центральная разность')
+
+        plt.axvline(x=h_opt_theory, color='r', linestyle='--', label=f'Теоретический h_opt = {h_opt_theory:.2e}')
+        plt.axvline(x=h_opt_fact, color='g', linestyle=':', label=f'Фактический h_opt = {h_opt_fact:.2e}')
+
         plt.title("Логарифмический масштаб для погрешности 1-ой производной ")
         plt.ylabel("Погрешность")
 
@@ -128,6 +157,7 @@ def delta(a,b,N_array,diff_type):
     else:
         for i in range (len(N_array)):
             F = create_data_grid(a, b, N_array[i])
+            h = np.linspace(a, b, N_array[i], retstep=True)[1]
 
             second_diff_2 = diff_2_ord2(F)
             second_diff_4 = diff_2_ord4(F)
@@ -140,12 +170,37 @@ def delta(a,b,N_array,diff_type):
 
             delta1[i] = max(abs(y_analytical_2 - second_diff_2[:,1]))
             delta2[i] = max(abs(y_analytical_4 - second_diff_4[:, 1]))
+            h_array[i] = h
 
-        plt.loglog(N_array, delta1, '-o',label='Разность (2-ой порядок)')
-        plt.loglog(N_array, delta2, '-s',label='Разность (4-ой порядок)')
+        # Определение порядков точности
+        log_h = np.log(h_array)
+        log_delta1 = np.log(delta1)
+        log_delta2 = np.log(delta2)
+
+        p1 = np.polyfit(log_h, log_delta1, 1)[0]
+        p2 = np.polyfit(log_h, log_delta2, 1)[0]
+
+        print(f"Порядок точности для 2-го порядка: {abs(p1):.2f}")
+        print(f"Порядок точности для 4-го порядка: {abs(p2):.2f}")
+
+        f_4th_max = 1.0  # тут требуется более точная оценка
+
+        epsilon = 1e-15
+        h_opt_2nd = (epsilon / f_4th_max) ** (1 / 4)
+        h_opt_4th = (epsilon / f_4th_max) ** (1 / 6)
+
+        # Фактические оптимальные шаги
+        h_opt_fact_2nd = h_array[np.argmin(delta1)]
+        h_opt_fact_4th = h_array[np.argmin(delta2)]
+
+        plt.loglog(h_array, delta1, '-o',label='Разность (2-ой порядок)')
+        plt.loglog(h_array, delta2, '-s',label='Разность (4-ой порядок)')
+        plt.axvline(x=h_opt_fact_2nd, color='r', linestyle='--', label=f'Факт. h_opt (2-й пор.) = {h_opt_fact_2nd:.2e}')
+        plt.axvline(x=h_opt_2nd, color='g', linestyle=':', label=f'Теор. h_opt (2-й пор.) = {h_opt_2nd:.2e}')
         plt.title("Логарифмический масштаб для погрешности 2-ой производной ")
         plt.ylabel("Погрешность")
-    plt.xlabel("N")
+
+    plt.xlabel("h")
     plt.legend(loc='best')
     plt.show()
 
