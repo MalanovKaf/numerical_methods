@@ -51,8 +51,13 @@ def diff_1_right(F):
 def diff_1_central(F):
     h=F[1][0]-F[0][0]
     diff = []
-    for i in range(1, len(F) - 1):
-        derivative = (F[i + 1][1] - F[i - 1][1]) / (2 * h)
+    for i in range(len(F)):
+        if i==0:
+            derivative=(2*F[i+1][1]-1.5*F[i][1]-0.5*F[i+2][1])/h
+        elif i==len(F)-1:
+            derivative=(1.5*F[i][1]-2*F[i-1][1]+0.5*F[i-2][1])/h
+        else:
+            derivative = (F[i + 1][1] - F[i - 1][1]) / (2 * h)
         diff.append([F[i][0], derivative])
     return np.array(diff)
 

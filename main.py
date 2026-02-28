@@ -14,4 +14,4 @@ delta_max(a,b,N,0,0)
 delta_max(a,b,N,1,0)
 delta_max(a,b,N,0,1)
 '''
-intorpolation_loc(a,b,20,0)
+intorpolation_loc(a,b,200,0)
