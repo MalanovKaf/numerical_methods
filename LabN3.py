@@ -16,6 +16,7 @@ class function_integral:
         self.an_integral, _ = integrate.quad(self.f, a, b, epsabs=1e-12)
         self.an_integral_period, _ = integrate.quad(self.f_period, a, b, epsabs=1e-12)
         self.an_integral_razryv, _ = integrate.quad(self.razryvnaya, a, b, epsabs=1e-12)
+        self.x_raz=self.a + (self.b - self.a) / 3
 
     @staticmethod
     def f(x):
@@ -23,25 +24,33 @@ class function_integral:
 
     @staticmethod
     def f_period(x):
-        return np.sin(x)**2
+        return np.sin(2*np.pi*x)**2
 
     def razryvnaya(self, x):
         x_raz = self.a + (self.b - self.a) / 3
-        # Проверяем, является ли x массивом
+        # Проверяю, является ли x массивом
         if isinstance(x, (list, np.ndarray)):
-            # Для массивов используем векторизованное вычисление
             result = np.zeros_like(x, dtype=float)
             mask_left = x < x_raz
             mask_right = x >= x_raz
-            result[mask_left] = x[mask_left] + 1
-            result[mask_right] = 2 * x[mask_right] + 0.5
+            result[mask_left] = np.exp(x[mask_left])
+            result[mask_right] = x[mask_right]**2
             return result
         else:
             # Для скалярных значений
             if x < x_raz:
-                return x + 1
+                return np.exp(x)
             else:
-                return 2 * x + 0.5
+                return x**2
+
+    @staticmethod
+    def func1(x):
+        return np.exp(x)
+
+    @staticmethod
+    def func2(x):
+        return x ** 2
+
 
     def rect_integral(self, h=None):
         """Метод правых прямоугольников (порядок точности 1)"""
@@ -56,7 +65,7 @@ class function_integral:
         if h is None:
             h = self.d
         integral = np.sum(func(X[1:-1]))  # Сумма внутренних точек
-        integral += (func(X[0]) + func(X[-1])) / 2  # Добавляем полусумму крайних
+        integral += (func(X[0]) + func(X[-1])) / 2  #полусумма крайних
         integral *= h
         return integral
 
@@ -134,8 +143,9 @@ class function_integral:
         X0, d0 = self.X, self.d
         functions = [
             (self.f, "f(x) = 1/(x³+x+10)", 'blue', self.an_integral),
-            (self.f_period, "f(x) = sin²(x)", 'green', self.an_integral_period),
-            (self.razryvnaya, "Разрывная функция", 'red', self.an_integral_razryv)
+            (self.f_period, "f(x) = sin²(2pix)", 'green', self.an_integral_period),
+            (self.razryvnaya, "Разрывная функция", 'red', self.an_integral_razryv),
+            ([self.func1,self.func2],"Разрывная особая сетка",'yellow',self.an_integral_razryv)
         ]
         print("Анализ погрешности метода трапеций:")
         print("-" * 60)
@@ -144,10 +154,20 @@ class function_integral:
             steps = []
             for N in N_array:
                 self.X, self.d = np.linspace(self.a, self.b, N, retstep=True)
-                numerical = self.trap_integral(func)
+
+                if label=="Разрывная особая сетка":
+                    x_special1,d1=np.linspace(self.a,self.x_raz,N//3,retstep=True)
+                    x_special2,d2=np.linspace(self.x_raz,self.b,N-N//3+1,retstep=True)
+                    numerical1=self.trap_integral(func[0],x_special1,d1)
+                    numerical2 = self.trap_integral(func[1],x_special2,d2)
+                    numerical=numerical1+numerical2
+                    steps.append(max(d1,d2))
+
+                else:
+                    numerical = self.trap_integral(func)
+                    steps.append(self.d)
                 error = abs(numerical - exact_value)
                 errors.append(error)
-                steps.append(self.d)
             # Построение графика в логарифмическом масштабе
             plt.loglog(steps, errors, 'o-', color=color, label=label,markersize=6, linewidth=2, alpha=0.8)
             # Оценка порядка точности
