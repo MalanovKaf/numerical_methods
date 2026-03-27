@@ -268,4 +268,4 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
 #study_newton_method()
 #study_precision_bisection()
 #study_precision_newton()
-plot_function_with_iterations(method="newton")
+#plot_function_with_iterations(method="newton")
