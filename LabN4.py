@@ -203,7 +203,42 @@ def study_precision_newton():
             print(f"  Ошибка: {e}")
             print()
 
-def Gavrik_method():
+def diff_1_central(F):
+    h=F[1][0]-F[0][0]
+    diff = []
+    for i in range(len(F)):
+        if i==0:
+            derivative=(2*F[i+1][1]-1.5*F[i][1]-0.5*F[i+2][1])/h
+        elif i==len(F)-1:
+            derivative=(1.5*F[i][1]-2*F[i-1][1]+0.5*F[i-2][1])/h
+        else:
+            derivative = (F[i + 1][1] - F[i - 1][1]) / (2 * h)
+        diff.append([F[i][0], derivative])
+    return np.array(diff)
+
+def Gavrik_method(f, f_der, x0, delta, max_iters=1000):
+    delta=1e-10
+    delta2=1e-5
+    """ Метод Ньютона (касательных) для поиска корня уравнения f(x)=0 """
+    xs = []
+    x_current = x0
+    iteration = 0
+    while iteration < max_iters:
+        fx = f(x_current)
+        fdx = f_der(x_current)
+        if fdx == 0:
+            raise Exception(f"Производная равна нулю в точке x = {x_current}")
+        x_next = x_current - fx / fdx
+        xs.append(x_next)
+        if abs(x_next - x_current) < delta * abs(x_next):
+            break
+        x_current = x_next
+        iteration += 1
+
+    if iteration >= max_iters:
+        raise Exception(f"Превышено максимальное количество итераций ({max_iters}) в методе Ньютона. "
+                        f"Последнее значение f(x) = {f(x_current):.2e}")
+    return xs[-1], xs
 
 
 def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0, x0=9.0):
