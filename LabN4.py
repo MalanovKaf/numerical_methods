@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from fontTools.ttLib import identifierToTag
+
 
 def f(x):
     """Исходная функция: arcsin(th(x)) - x/2 + 3 = 0"""
@@ -203,42 +205,38 @@ def study_precision_newton():
             print(f"  Ошибка: {e}")
             print()
 
-def diff_1_central(F):
-    h=F[1][0]-F[0][0]
-    diff = []
-    for i in range(len(F)):
-        if i==0:
-            derivative=(2*F[i+1][1]-1.5*F[i][1]-0.5*F[i+2][1])/h
-        elif i==len(F)-1:
-            derivative=(1.5*F[i][1]-2*F[i-1][1]+0.5*F[i-2][1])/h
-        else:
-            derivative = (F[i + 1][1] - F[i - 1][1]) / (2 * h)
-        diff.append([F[i][0], derivative])
-    return np.array(diff)
+def diff_1_central(xs,h):
+    derivate=(f(xs+h)-f(xs-h))/(2*h)
+    return derivate
 
-def Gavrik_method(f, f_der, x0, delta, max_iters=1000):
-    delta=1e-10
-    delta2=1e-5
+def Garvik_method(f, f_der, x0, delta, max_iters=1000):
     """ Метод Ньютона (касательных) для поиска корня уравнения f(x)=0 """
-    xs = []
+    xs = [x0]
     x_current = x0
     iteration = 0
     while iteration < max_iters:
         fx = f(x_current)
-        fdx = f_der(x_current)
+        fdx = f_der(x_current,1e-10)
         if fdx == 0:
             raise Exception(f"Производная равна нулю в точке x = {x_current}")
         x_next = x_current - fx / fdx
         xs.append(x_next)
-        if abs(x_next - x_current) < delta * abs(x_next):
+        if iteration > 0:
+            q=(x_next-x_current)/(x_current-xs[iteration-1])
+            if abs(q*(x_next-x_current)/(1-q)) < delta * abs(x_next):
+                delta=1e-10
+                if abs(x_next-x_current)>abs(x_current-xs[iteration-1]):
+                    raise Exception("Нарушена монотонность")
+                if abs(q * (x_next - x_current) / (1 - q)) < delta * abs(x_next):
+                    break
+        elif iteration==0 and abs(x_next-x_current)<delta*abs(x_next):
             break
         x_current = x_next
         iteration += 1
-
     if iteration >= max_iters:
         raise Exception(f"Превышено максимальное количество итераций ({max_iters}) в методе Ньютона. "
                         f"Последнее значение f(x) = {f(x_current):.2e}")
-    return xs[-1], xs
+    return xs[-1], xs[1:]
 
 
 def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0, x0=9.0):
@@ -271,9 +269,12 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
     if method == 'bisection':
         color, marker, name = 'red', 'o', 'Дихотомия'
         root, history = bisection(f, a, b, delta)
-    else:
+    elif method == 'newton':
         color, marker, name = 'green', 's', 'Ньютона'
         root, history = newton(f, f_derivative, x0, delta)
+    else:
+        color, marker, name = 'green', 's', 'Гарвик'
+        root, history = Garvik_method(f, diff_1_central, x0, delta)
 
     #Точки итераций
     y_history = [f(xi) for xi in history]
@@ -300,10 +301,11 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
     plt.tight_layout()
     plt.show()
 
-plot_function()
-study_bisection_method()
-study_newton_method()
-study_precision_bisection()
-study_precision_newton()
-plot_function_with_iterations(method="newton")
-plot_function_with_iterations()
+#plot_function()
+#study_bisection_method()
+#study_newton_method()
+#study_precision_bisection()
+#study_precision_newton()
+#plot_function_with_iterations(method="newton")
+plot_function_with_iterations(method="Garvik",delta=1e-5,x0=-100000.0)
+print(Garvik_method(f,diff_1_central,-100000,1e-5))
