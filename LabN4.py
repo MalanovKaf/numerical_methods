@@ -203,6 +203,8 @@ def study_precision_newton():
             print(f"  Ошибка: {e}")
             print()
 
+def Gavrik_method():
+
 
 def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0, x0=9.0):
     """ Построение графика функции f(x) с отображением итераций выбранного метода """
@@ -263,9 +265,10 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
     plt.tight_layout()
     plt.show()
 
-#plot_function()
-#study_bisection_method()
-#study_newton_method()
-#study_precision_bisection()
-#study_precision_newton()
-#plot_function_with_iterations(method="newton")
+plot_function()
+study_bisection_method()
+study_newton_method()
+study_precision_bisection()
+study_precision_newton()
+plot_function_with_iterations(method="newton")
+plot_function_with_iterations()
