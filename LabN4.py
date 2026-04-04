@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from fontTools.ttLib import identifierToTag
+
 
 def f(x):
     """Исходная функция: arcsin(th(x)) - x/2 + 3 = 0"""
@@ -203,6 +205,39 @@ def study_precision_newton():
             print(f"  Ошибка: {e}")
             print()
 
+def diff_1_central(xs,h):
+    derivate=(f(xs+h)-f(xs-h))/(2*h)
+    return derivate
+
+def Garvik_method(f, f_der, x0, delta, max_iters=1000):
+    """ Метод Ньютона (касательных) для поиска корня уравнения f(x)=0 """
+    xs = [x0]
+    x_current = x0
+    iteration = 0
+    while iteration < max_iters:
+        fx = f(x_current)
+        fdx = f_der(x_current,1e-10)
+        if fdx == 0:
+            raise Exception(f"Производная равна нулю в точке x = {x_current}")
+        x_next = x_current - fx / fdx
+        xs.append(x_next)
+        if iteration > 0:
+            q=(x_next-x_current)/(x_current-xs[iteration-1])
+            if abs(q*(x_next-x_current)/(1-q)) < delta * abs(x_next):
+                delta=1e-10
+                if abs(x_next-x_current)>abs(x_current-xs[iteration-1]):
+                    raise Exception("Нарушена монотонность")
+                if abs(q * (x_next - x_current) / (1 - q)) < delta * abs(x_next):
+                    break
+        elif iteration==0 and abs(x_next-x_current)<delta*abs(x_next):
+            break
+        x_current = x_next
+        iteration += 1
+    if iteration >= max_iters:
+        raise Exception(f"Превышено максимальное количество итераций ({max_iters}) в методе Ньютона. "
+                        f"Последнее значение f(x) = {f(x_current):.2e}")
+    return xs[-1], xs[1:]
+
 
 def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0, x0=9.0):
     """ Построение графика функции f(x) с отображением итераций выбранного метода """
@@ -234,9 +269,12 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
     if method == 'bisection':
         color, marker, name = 'red', 'o', 'Дихотомия'
         root, history = bisection(f, a, b, delta)
-    else:
+    elif method == 'newton':
         color, marker, name = 'green', 's', 'Ньютона'
         root, history = newton(f, f_derivative, x0, delta)
+    else:
+        color, marker, name = 'green', 's', 'Гарвик'
+        root, history = Garvik_method(f, diff_1_central, x0, delta)
 
     #Точки итераций
     y_history = [f(xi) for xi in history]
@@ -269,3 +307,5 @@ def plot_function_with_iterations(method='bisection', delta=1e-9, a=9.0, b=10.0,
 #study_precision_bisection()
 #study_precision_newton()
 #plot_function_with_iterations(method="newton")
+plot_function_with_iterations(method="Garvik",delta=1e-5,x0=-100000.0)
+print(Garvik_method(f,diff_1_central,-100000,1e-5))
