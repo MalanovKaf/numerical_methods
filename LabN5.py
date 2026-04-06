@@ -70,23 +70,19 @@ def plot_numerical_solutions(h=0.05, x_end=1):
     """
     x0 = 0
     y0 = np.array([1.0, 2.0])
-
     # Решение разными методами
     x_euler, y_euler = euler_method(system, x0, y0, h, x_end)
     x_rk4, y_rk4 = runge_kutta_4(system, x0, y0, h, x_end)
     x_adams, y_adams = adams_3rd_order(system, x0, y0, h, x_end)
-
     # Точное решение
     x_exact = np.linspace(x0, x_end, 500)
     y_exact = exact_solution(x_exact)
-
     # Построение графика
     plt.figure(figsize=(10, 6))
     plt.plot(x_exact, y_exact, 'k-', label='Точное решение', linewidth=2)
     plt.plot(x_euler, y_euler[:, 0], 'ro-', label='Метод Эйлера', markersize=3, linewidth=1)
     plt.plot(x_rk4, y_rk4[:, 0], 'gs-', label='Рунге-Кутта 4 порядка', markersize=3, linewidth=1)
     plt.plot(x_adams, y_adams[:, 0], 'b^-', label='Адамс 3 порядка', markersize=3, linewidth=1)
-
     plt.xlabel('x')
     plt.ylabel('y(x)')
     plt.title(f'Численные решения ОДУ (шаг h = {h})')
@@ -106,7 +102,6 @@ def plot_error_vs_step():
         _, y_euler = euler_method(system, x0, y0, h, x_end)
         _, y_rk4 = runge_kutta_4(system, x0, y0, h, x_end)
         _, y_adams = adams_3rd_order(system, x0, y0, h, x_end)
-
         errors_euler.append(abs(y_euler[-1, 0] - exact_val))
         errors_rk4.append(abs(y_rk4[-1, 0] - exact_val))
         errors_adams.append(abs(y_adams[-1, 0] - exact_val))
@@ -120,3 +115,85 @@ def plot_error_vs_step():
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.show()
+
+def runge_error_estimate(y_h, y_h2, p):
+    """Оценка погрешности по правилу Рунге"""
+    return (y_h2 - y_h) / (2**p - 1)
+
+
+def runge_error_analysis(h=0.05, x_end=1):
+    """
+    Оценка погрешности по правилу Рунге для всех методов при заданном шаге.
+    Сравнение с точным значением погрешности.
+
+    Параметры:
+    h - шаг интегрирования (по умолчанию 0.05)
+    x_end - конечная точка интегрирования (по умолчанию 1)
+    """
+    x0 = 0
+    y0 = np.array([1.0, 2.0])
+    exact_val = exact_solution(x_end)
+    h2 = h / 2
+    # 1. Метод Эйлера (порядок точности p = 1)
+    print("\n🔹 МЕТОД ЭЙЛЕРА (p = 1)")
+    print("-" * 40)
+    # Решение с шагом h
+    _, y_h = euler_method(system, x0, y0, h, x_end)
+    y_h_val = y_h[-1, 0]
+    true_error_h = abs(y_h_val - exact_val)
+    # Решение с шагом h/2
+    _, y_h2 = euler_method(system, x0, y0, h2, x_end)
+    y_h2_val = y_h2[-1, 0]
+    true_error_h2 = abs(y_h2_val - exact_val)
+    # Оценка погрешности по Рунге для метода 1-го порядка
+    runge_error = runge_error_estimate(y_h_val, y_h2_val, p=1)
+    runge_error_abs = abs(runge_error)
+    print(f"Решение с шагом h      = {h}:     y ≈ {y_h_val:.10f}")
+    print(f"Решение с шагом h/2    = {h2}:   y ≈ {y_h2_val:.10f}")
+    print(f"Точная погрешность (h)       : {true_error_h:.10e}")
+    print(f"Оценка Рунге (h)             : {runge_error_abs:.10e}")
+    print(f"Отношение оценка/точная      : {runge_error_abs / true_error_h:.4f}")
+
+
+    # 2. Метод Рунге-Кутты 4 порядка (p = 4)
+    print("\n🔹 МЕТОД РУНГЕ-КУТТЫ 4-ГО ПОРЯДКА (p = 4)")
+    print("-" * 40)
+    # Решение с шагом h
+    _, y_h = runge_kutta_4(system, x0, y0, h, x_end)
+    y_h_val = y_h[-1, 0]
+    true_error_h = abs(y_h_val - exact_val)
+    # Решение с шагом h/2
+    _, y_h2 = runge_kutta_4(system, x0, y0, h2, x_end)
+    y_h2_val = y_h2[-1, 0]
+    true_error_h2 = abs(y_h2_val - exact_val)
+    # Оценка погрешности по Рунге для метода 4-го порядка
+    runge_error = runge_error_estimate(y_h_val, y_h2_val, p=4)
+    runge_error_abs = abs(runge_error)
+
+    print(f"Решение с шагом h      = {h}:     y ≈ {y_h_val:.10f}")
+    print(f"Решение с шагом h/2    = {h2}:   y ≈ {y_h2_val:.10f}")
+    print(f"Точная погрешность (h)       : {true_error_h:.10e}")
+    print(f"Оценка Рунге (h)             : {runge_error_abs:.10e}")
+    print(f"Отношение оценка/точная      : {runge_error_abs / true_error_h:.4f}")
+
+
+    # 3. Метод Адамса 3-го порядка (p = 3)
+    print("\n🔹 МЕТОД АДАМСА 3-ГО ПОРЯДКА (p = 3)")
+    print("-" * 40)
+    # Решение с шагом h
+    _, y_h = adams_3rd_order(system, x0, y0, h, x_end)
+    y_h_val = y_h[-1, 0]
+    true_error_h = abs(y_h_val - exact_val)
+    # Решение с шагом h/2
+    _, y_h2 = adams_3rd_order(system, x0, y0, h2, x_end)
+    y_h2_val = y_h2[-1, 0]
+    true_error_h2 = abs(y_h2_val - exact_val)
+    # Оценка погрешности по Рунге для метода 3-го порядка
+    runge_error = runge_error_estimate(y_h_val, y_h2_val, p=3)
+    runge_error_abs = abs(runge_error)
+
+    print(f"Решение с шагом h      = {h}:     y ≈ {y_h_val:.10f}")
+    print(f"Решение с шагом h/2    = {h2}:   y ≈ {y_h2_val:.10f}")
+    print(f"Точная погрешность (h)       : {true_error_h:.10e}")
+    print(f"Оценка Рунге (h)             : {runge_error_abs:.10e}")
+    print(f"Отношение оценка/точная      : {runge_error_abs / true_error_h:.4f}")
