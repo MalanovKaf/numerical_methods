@@ -186,7 +186,6 @@ def runge_error_analysis(h=0.05, x_end=1):
 
 '''
 def auto_runge_kutta_4(f, x0, y0, h, x_end,delta):
-    n_steps = int((x_end - x0) / h) + 1
     x_vals = np.linspace(x0, x_end, n_steps)
     y_vals = np.zeros((n_steps, len(y0)))
     y_vals[0] = y0
@@ -199,7 +198,7 @@ def auto_runge_kutta_4(f, x0, y0, h, x_end,delta):
         k4 = f(x + h, y + h * k3)
         y_vals[i] = y + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
         if (y_vals[i]-y_true)>delta:
-            h=h/2
+            h=h/2 есть в интернете изменение шага 
     return x_vals, y_vals
 '''
 plot_numerical_solutions()
