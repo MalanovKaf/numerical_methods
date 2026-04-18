@@ -199,6 +199,8 @@ def auto_runge_kutta_4(f, x0, y0, h, x_end,delta):
         y_vals[i] = y + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
         if (y_vals[i]-y_true)>delta:
             h=h/2 есть в интернете изменение шага 
+            график решения 
+            график изменения шага при изменении (шаг от итерации) 
     return x_vals, y_vals
 '''
 plot_numerical_solutions()
