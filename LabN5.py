@@ -184,28 +184,9 @@ def runge_error_analysis(h=0.05, x_end=1):
     print(f"Оценка Рунге (h/2)             : {runge_error_abs:.10e}")
     print(f"Отношение оценка/точная      : {runge_error_abs / true_error_h2:.4f}")
 
-'''
-def auto_runge_kutta_4(f, x0, y0, h, x_end,delta):
-    x_vals = np.linspace(x0, x_end, n_steps)
-    y_vals = np.zeros((n_steps, len(y0)))
-    y_vals[0] = y0
-    for i in range(1, n_steps):
-        x = x_vals[i - 1]
-        y = y_vals[i - 1]
-        k1 = f(x, y)
-        k2 = f(x + h / 2, y + (h / 2) * k1)
-        k3 = f(x + h / 2, y + (h / 2) * k2)
-        k4 = f(x + h, y + h * k3)
-        y_vals[i] = y + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
-        if (y_vals[i]-y_true)>delta:
-            h=...  формула есть в интернете изменение шага 
-            график решения 
-            график изменения шага при изменении (шаг от итерации) 
-    return x_vals, y_vals
-'''
 
 
-def adaptive_runge_kutta_4_graph(f, x0, y0, h0, x_end, delta):
+def adaptive_runge_kutta_4(f, x0, y0, h0, x_end, delta):
     """
     Функция для построения графика решения адаптивным методом Рунге-Кутты 4 порядка
     """
@@ -217,21 +198,15 @@ def adaptive_runge_kutta_4_graph(f, x0, y0, h0, x_end, delta):
     while x < x_end - 1e-12:
         if x + h > x_end:
             h = x_end - x
-        # Два полушага (используем существующую функцию runge_kutta_4)
-        # Для одного шага с шагом h/2
         _, y_half = runge_kutta_4(f, x, y, h / 2, x + h)
         y_full = y_half[-1]
-        # Один полный шаг с шагом h
         _, y_full_step = runge_kutta_4(f, x, y, h, x + h)
         y_coarse = y_full_step[-1]
-        # Оценка погрешности
         error = np.max(np.abs(y_coarse - y_full)) / 15
-        # Изменение шага
         if error < 1e-15:
             optimal_h = h
         else:
             optimal_h = h * (delta / error) ** 0.2 * 0.9
-
         if error <= delta:
             x = x + h
             y = y_full
@@ -240,31 +215,24 @@ def adaptive_runge_kutta_4_graph(f, x0, y0, h0, x_end, delta):
             h = optimal_h
         else:
             h = optimal_h
-
         if h < 1e-10:
             break
     x_vals = np.array(x_vals)
     y_vals = np.array(y_vals)
-    # Построение графика решения
     plt.figure(figsize=(10, 6))
     plt.plot(x_vals, y_vals[:, 0], 'b-', linewidth=2, label='Численное решение (адаптивный RK4)')
-
-    # Точное решение для сравнения
     x_exact = np.linspace(x0, x_end, 1000)
     y_exact = exact_solution(x_exact)
     plt.plot(x_exact, y_exact, 'r--', linewidth=2, label='Точное решение')
-
     plt.xlabel('x', fontsize=12)
     plt.ylabel('y(x)', fontsize=12)
     plt.title(f'Адаптивный метод Рунге-Кутты 4 порядка (δ = {delta})', fontsize=14)
     plt.legend()
     plt.grid(True)
     plt.show()
-
     return x_vals, y_vals
 
-
-def adaptive_runge_kutta_4_h_graph(f, x0, y0, h0, x_end, delta):
+def adaptive_runge_kutta_4_h(f, x0, y0, h0, x_end, delta):
     """
     Функция для построения графика изменения шага h
     """
@@ -273,28 +241,18 @@ def adaptive_runge_kutta_4_h_graph(f, x0, y0, h0, x_end, delta):
     x = x0
     y = y0
     h = h0
-
     while x < x_end - 1e-12:
         if x + h > x_end:
             h = x_end - x
-
-        # Два полушага
         _, y_half = runge_kutta_4(f, x, y, h / 2, x + h)
         y_full = y_half[-1]
-
-        # Один полный шаг
         _, y_full_step = runge_kutta_4(f, x, y, h, x + h)
         y_coarse = y_full_step[-1]
-
-        # Оценка погрешности
         error = np.max(np.abs(y_coarse - y_full)) / 15
-
-        # Изменение шага
         if error < 1e-15:
             optimal_h = h
         else:
             optimal_h = h * (delta / error) ** 0.2 * 0.9
-
         if error <= delta:
             x = x + h
             y = y_full
@@ -303,11 +261,8 @@ def adaptive_runge_kutta_4_h_graph(f, x0, y0, h0, x_end, delta):
             h = optimal_h
         else:
             h = optimal_h
-
         if h < 1e-10:
             break
-
-    # Построение графика изменения шага
     plt.figure(figsize=(10, 6))
     plt.plot(range(len(h_vals)), h_vals, 'ro-', markersize=4, linewidth=1.5)
     plt.xlabel('Номер шага (итерации)', fontsize=12)
@@ -324,6 +279,6 @@ runge_error_analysis()
 x0, x_end = 0, 1
 y0 = np.array([1.0, 2.0])
 # График решения
-x_vals, y_vals = adaptive_runge_kutta_4_graph(system, x0, y0, 0.05, x_end, 1e-6)
+x_vals, y_vals = adaptive_runge_kutta_4(system, x0, y0, 0.05, x_end, 1e-6)
 # График изменения шага h
-x_vals_h, h_vals = adaptive_runge_kutta_4_h_graph(system, x0, y0, 0.05, x_end, 1e-6)
+x_vals_h, h_vals = adaptive_runge_kutta_4_h(system, x0, y0, 0.05, x_end, 1e-6)
