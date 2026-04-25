@@ -174,7 +174,6 @@ def runge_error_analysis(h=0.05, x_end=1):
     _, y_h2 = adams_3rd_order(system, x0, y0, h2, x_end)
     y_h2_val = y_h2[-1, 0]
     true_error_h2 = abs(y_h2_val - exact_val)
-    # Оценка погрешности по Рунге для метода 3-го порядка
     runge_error = runge_error_estimate(y_h_val, y_h2_val, p=3)
     runge_error_abs = abs(runge_error)
 
@@ -226,7 +225,7 @@ def adaptive_runge_kutta_4(f, x0, y0, h0, x_end, delta):
     plt.plot(x_exact, y_exact, 'r--', linewidth=2, label='Точное решение')
     plt.xlabel('x', fontsize=12)
     plt.ylabel('y(x)', fontsize=12)
-    plt.title(f'Адаптивный метод Рунге-Кутты 4 порядка (δ = {delta})', fontsize=14)
+    plt.title(f'Адаптивный метод Рунге-Кутты 4 порядка (delta = {delta})', fontsize=14)
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -267,7 +266,7 @@ def adaptive_runge_kutta_4_h(f, x0, y0, h0, x_end, delta):
     plt.plot(range(len(h_vals)), h_vals, 'ro-', markersize=4, linewidth=1.5)
     plt.xlabel('Номер шага (итерации)', fontsize=12)
     plt.ylabel('Размер шага h', fontsize=12)
-    plt.title(f'Изменение шага интегрирования (δ = {delta})', fontsize=14)
+    plt.title(f'Изменение шага интегрирования (delta = {delta})', fontsize=14)
     plt.yscale('log')
     plt.grid(True)
     plt.show()
@@ -278,7 +277,7 @@ plot_error_vs_step()
 runge_error_analysis()
 x0, x_end = 0, 1
 y0 = np.array([1.0, 2.0])
-# График решения
-x_vals, y_vals = adaptive_runge_kutta_4(system, x0, y0, 0.05, x_end, 1e-6)
-# График изменения шага h
-x_vals_h, h_vals = adaptive_runge_kutta_4_h(system, x0, y0, 0.05, x_end, 1e-6)
+x_vals, y_vals = adaptive_runge_kutta_4(system, x0, y0, 0.5, x_end, 1e-6)
+x_vals_h, h_vals = adaptive_runge_kutta_4_h(system, x0, y0, 1, x_end, 1e-6)
+
+print(h_vals)
