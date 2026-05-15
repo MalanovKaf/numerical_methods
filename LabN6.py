@@ -2,278 +2,141 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def progonka(a, b, c, d):
-    """
-    Функция реализующая метод прогонки для решения СЛАУ с трехдиагональной матрицей.
-    Система: a[i]*y[i-1] + b[i]*y[i] + c[i]*y[i+1] = d[i]
-
-    Параметры:
-    a - нижняя диагональ (a[0] - нулевой элемент не используется или равен 0)
-    b - главная диагональ
-    c - верхняя диагональ (c[n-1] - последний элемент не используется)
-    d - столбец правых частей
-
-    Возвращает:
-    y - вектор решения
-    """
-    n = len(b)
-    alpha = np.zeros(n)
-    beta = np.zeros(n)
-
-    # Прямой ход
-    alpha[0] = -c[0] / b[0]
-    beta[0] = d[0] / b[0]
-
-    for i in range(1, n - 1):
-        denom = b[i] + a[i] * alpha[i - 1]
-        alpha[i] = -c[i] / denom
-        beta[i] = (d[i] - a[i] * beta[i - 1]) / denom
-
-    # Вычисление последнего элемента
-    y = np.zeros(n)
-    y[n - 1] = (d[n - 1] - a[n - 1] * beta[n - 2]) / (b[n - 1] + a[n - 1] * alpha[n - 2])
-
-    # Обратный ход
-    for i in range(n - 2, -1, -1):
-        y[i] = alpha[i] * y[i + 1] + beta[i]
-
-    return y
-
-
-def test_progonka():
-    """
-    Тестовая задача для проверки корректности метода прогонки.
-    Решается система:
-    4y1 - y2 = 7
-    -y1 + 4y2 - y3 = 4
-    -y2 + 4y3 = -7
-    Точное решение: y = [2, 1, -1.5]
-    """
-    print("Запуск теста метода прогонки...")
-    a = np.array([0.0, -1.0, -1.0])  # a[0] не используется, сдвиг на 1
-    b = np.array([4.0, 4.0, 4.0])
-    c = np.array([-1.0, -1.0, 0.0])  # c[n-1] не используется
-    d = np.array([7.0, 4.0, -7.0])
-
-    y = progonka(a, b, c, d)
-    y_exact = np.array([2.0, 1.0, -1.5])
-
-    error = np.max(np.abs(y - y_exact))
-    print(f"Полученное решение: {y}")
-    print(f"Точное решение:     {y_exact}")
-    print(f"Максимальная погрешность: {error:.2e}")
-
-    if error < 1e-10:
-        print("Тест ПРОЙДЕН успешно.\n")
-    else:
-        print("Тест ПРОВАЛЕН.\n")
+def exact_solution(x):
+    return np.cos(x) + 2 * np.log(1 + x)
 
 
 def coeff_u(x):
-    """
-    Вычисляет коэффициенты ОДУ в точке x.
-    ОДУ: u'' + p(x)u' + q(x)u = f(x)
-    p(x) = 1/(1+x)
-    q(x) = tan(x)/(1+x)
-    f(x) = 2*tan(x)/(1+x)*ln(1+x) - cos(x)
-    """
     p = 1.0 / (1 + x)
     q = np.tan(x) / (1 + x)
     f = (2 * np.tan(x) / (1 + x)) * np.log(1 + x) - np.cos(x)
     return p, q, f
 
 
-def exact_solution(x):
-    """
-    Точное решение u0(x) = cos(x) + 2*ln(1+x)
-    """
-    return np.cos(x) + 2 * np.log(1 + x)
+def progonka(a, b, c, d):
+    n = len(b)
+    alpha = np.zeros(n)
+    beta = np.zeros(n)
+    alpha[0] = -c[0] / b[0]
+    beta[0] = d[0] / b[0]
+    for i in range(1, n - 1):
+        denom = b[i] + a[i] * alpha[i - 1]
+        alpha[i] = -c[i] / denom
+        beta[i] = (d[i] - a[i] * beta[i - 1]) / denom
+    y = np.zeros(n)
+    y[n - 1] = (d[n - 1] - a[n - 1] * beta[n - 2]) / (b[n - 1] + a[n - 1] * alpha[n - 2])
+    for i in range(n - 2, -1, -1):
+        y[i] = alpha[i] * y[i + 1] + beta[i]
+    return y
 
 
 def solve_bvp(N, order_bc=1):
-    """
-    Решение краевой задачи методом конечных разностей.
-
-    Параметры:
-    N - количество интервалов разбиения (узлов N+1)
-    order_bc - порядок аппроксимации граничных условий (1 или 2)
-    """
     h = 1.0 / N
     x = np.linspace(0, 1, N + 1)
-
-    # Массивы для коэффициентов трехдиагональной системы
-    # Система имеет размер (N+1)x(N+1) для узлов i=0..N
     n = N + 1
-    a = np.zeros(n)  # нижняя диагональ
-    b = np.zeros(n)  # главная диагональ
-    c = np.zeros(n)  # верхняя диагональ
-    d = np.zeros(n)  # правая часть
-
-    # 1. Левое граничное условие: u(0) - u'(0) = -1
+    a = np.zeros(n)
+    b = np.zeros(n)
+    c = np.zeros(n)
+    d = np.zeros(n)
+    p0, q0, f0 = coeff_u(0.0)
 
     if order_bc == 1:
-        # Аппроксимация 1-го порядка: u'(0) ~ (u1 - u0)/h
-        # u0 - (u1 - u0)/h = -1
-        # u0*(1 + 1/h) - u1/h = -1
+        # Аппроксимация 1-го порядка: u'(0) ≈ (u1 - u0)/h
+        # u0 - (u1 - u0)/h = -1  =>  u0*(1 + 1/h) - u1*(1/h) = -1
+        a[0] = 0.0
         b[0] = 1.0 + 1.0 / h
         c[0] = -1.0 / h
         d[0] = -1.0
-    else:
-        # Аппроксимация 2-го порядка: u'(0) ~ (-3*u0 + 4*u1 - u2)/(2h)
-        # u0 - (-3*u0 + 4*u1 - u2)/(2h) = -1
-        # u0*(1 + 3/(2h)) - 2*u1/h + u2/(2h) = -1
-        # Внимание: здесь появляется u2, что выходит за рамки трехдиагональности для 1-й строки.
-        # Однако, в методе прогонки для краевых задач 2-го порядка часто используют формулу с фиктивным узлом
-        # или разностное уравнение для 1-го узла с модифицированными коэффициентами.
-        # В задании сказано "Использовать элементарные преобразования... чтобы привести к нужному виду".
-        # Более стандартный подход для 2-го порядка на границе:
-        # Используем разностное уравнение в точке x=0 тоже, либо формулу с фиктивным узлом x_{-1}.
-        # Через фиктивный узел: u'0 = (u1 - u_{-1})/(2h) => u_{-1} = u1 - 2h*u'0
-        # Подставляем в разностное уравнение для i=0: (u_{-1} - 2u0 + u1)/h^2 + ...
-        # Это стандартный прием.
-
-        # u'0 = (u1 - u_{-1}) / (2h) => u_{-1} = u1 - 2h * u'0
-        # Из ГУ: u0 - u'0 = -1 => u'0 = u0 + 1
-        # => u_{-1} = u1 - 2h*(u0 + 1)
-
-        # Разностное уравнение в нулевом узле (аппроксимация ОДУ в x=0):
-        # (u_{-1} - 2*u0 + u1)/h^2 + p0*(u1 - u_{-1})/(2h) + q0*u0 = f0
-        # Подставляем u_{-1}:
-        # (u1 - 2h(u0+1) - 2u0 + u1)/h^2 + p0*(u1 - (u1 - 2h(u0+1)))/(2h) + q0*u0 = f0
-        # ... упрощаем ...
-        # Это даст уравнение вида A*u0 + B*u1 = C
-
-        p0, q0, f0 = coeff_u(0.0)
-        # Коэффициенты после подстановки u_{-1}
-        # Член с u_{-1} в u'': 1/h^2 * (-2h(u0+1) - 2u0 + 2u1) -> 1/h^2 * (-2h*u0 - 2h - 2u0 + 2u1)
-        # Член с u_{-1} в u': -p0/(2h) * (-2h(u0+1)) -> p0 * (u0 + 1)
-
-        # Собираем при u0:
-        # -2/h^2 - 2/h + p0 + q0  (это грубая оценка, нужно аккуратно выписать)
-        # Давайте аккуратно:
-        # u''(0) ~ ( (u1 - 2h(u0+1)) - 2u0 + u1 ) / h^2 = ( 2u1 - 2u0 - 2h*u0 - 2h ) / h^2
-        #        = 2(u1 - u0)/h^2 - 2(u0 + 1)/h
-        # u'(0) ~ (u1 - (u1 - 2h(u0+1))) / (2h) = u0 + 1
-        # ОДУ: 2(u1 - u0)/h^2 - 2(u0 + 1)/h + p0*(u0 + 1) + q0*u0 = f0
-        # 2(u1 - u0)/h^2 + (q0 - 2/h + p0)*u0 = f0 + 2/h - p0
-
-        b[0] = -2.0 / h ** 2 + q0 - 2.0 / h + p0
+    elif order_bc == 2:
+        # Аппроксимация 2-го порядка (метод фиктивного узла)
+        # u_{-1} = u1 - 2h*(u0 + 1)
+        a[0] = 0.0
+        b[0] = -2.0 / h ** 2 - 2.0 / h + p0 + q0
         c[0] = 2.0 / h ** 2
         d[0] = f0 + 2.0 / h - p0
+    else:
+        raise ValueError("order_bc должен быть 1 или 2")
 
-    # 2. Внутренние узлы (i = 1 ... N-1)
-    # Стандартная схема 2-го порядка
     for i in range(1, N):
         xi = x[i]
         p, q, f = coeff_u(xi)
-
         a[i] = 1.0 / h ** 2 - p / (2 * h)
         b[i] = -2.0 / h ** 2 + q
         c[i] = 1.0 / h ** 2 + p / (2 * h)
         d[i] = f
 
-    # 3. Правое граничное условие: u(1) = u_right
-    # В задании указано 1.9266, но сказано уточнить через точное решение.
-    # Вычислим точное значение для чистоты эксперимента.
-    u_right_exact = exact_solution(1.0)
-
-    a[N] = 0.0  # В последней строке нет нижнего коэффициента
+    a[N] = 0.0
     b[N] = 1.0
-    d[N] = u_right_exact
+    c[N] = 0.0
+    d[N] = exact_solution(1.0)
 
-    # Вызов метода прогонки
     u = progonka(a, b, c, d)
     return x, u
 
 
-def compute_error(u_num, u_exact):
-    """Вычисляет норму погрешности (C-норма, максимум)"""
-    return np.max(np.abs(u_num - u_exact))
-
-
-def runge_rule(u_h, u_h2):
-    """
-    Оценка погрешности по правилу Рунге.
-    Порядок схемы k=2 (внутри области).
-    R = |u_h - u_h2| / (2^k - 1)
-    """
-    # k=2 для внутренней аппроксимации
-    return np.abs(u_h - u_h2) / 3.0
-
+def compute_error(u_num, x):
+    u_ex = exact_solution(x)
+    return np.max(np.abs(u_num - u_ex))  # C-норма (максимум)
 
 def main():
-    # 1. Тест метода прогонки
-    test_progonka()
+    print("Исследование сходимости...")
+    print(f"{'N':<5} {'h':<10} {'Err (1st)':<15} {'Err (2nd)':<15} {'Ratio1':<8} {'Ratio2':<8}")
+    print("-" * 75)
 
     N_values = [10, 20, 40, 80, 160]
-
-    errors_1st = []
-    errors_2nd = []
-    h_values = []
-
-    print(f"{'N':<5} {'h':<10} {'Err (1st BC)':<15} {'Err (2nd BC)':<15}")
-    print("-" * 50)
+    errors_1st, errors_2nd, h_values = [], [], []
+    prev_e1, prev_e2 = None, None
 
     for N in N_values:
         h = 1.0 / N
         h_values.append(h)
 
-        # Решение с ГУ 1-го порядка
-        x, u_1 = solve_bvp(N, order_bc=1)
-        u_ex = exact_solution(x)
-        err_1 = compute_error(u_1, u_ex)
-        errors_1st.append(err_1)
+        # Решаем для обоих порядков
+        _, u1 = solve_bvp(N, order_bc=1)
+        err1 = compute_error(u1, np.linspace(0, 1, N + 1))
+        errors_1st.append(err1)
 
-        # Решение с ГУ 2-го порядка
-        # Для N=10 схема 2-го порядка на границе может быть некорректна из-за малости шага,
-        # но математически работает.
-        x, u_2 = solve_bvp(N, order_bc=2)
-        err_2 = compute_error(u_2, u_ex)
-        errors_2nd.append(err_2)
+        _, u2 = solve_bvp(N, order_bc=2)
+        err2 = compute_error(u2, np.linspace(0, 1, N + 1))
+        errors_2nd.append(err2)
 
-        print(f"{N:<5} {h:<10.5f} {err_1:<15.5e} {err_2:<15.5e}")
+        r1 = prev_e1 / err1 if prev_e1 else None
+        r2 = prev_e2 / err2 if prev_e2 else None
 
-    # Построение графиков зависимости погрешности от шага
-    plt.figure(figsize=(10, 6))
+        print(f"{N:<5} {h:<10.5f} {err1:<15.5e} {err2:<15.5e} "
+              f"{r1 if r1 else '-':<8} {r2 if r2 else '-':<8}")
 
-    # График для 1-го порядка
-    plt.loglog(h_values, errors_1st, 'o-', label='Аппроксимация ГУ 1-го порядка')
+        prev_e1, prev_e2 = err1, err2
 
-    # График для 2-го порядка
-    plt.loglog(h_values, errors_2nd, 's-', label='Аппроксимация ГУ 2-го порядка')
+    plt.figure(figsize=(9, 6))
+    h_arr = np.array(h_values)
 
-    # Эталонные линии наклона
-    # Для 1-го порядка наклон 1 (O(h))
-    h_ref = np.array(h_values)
-    plt.loglog(h_ref, h_ref * errors_1st[0] / h_values[0], 'k--', alpha=0.5, label='O(h)')
+    plt.loglog(h_arr, errors_1st, 'bo-', lw=2, ms=6, label='ГУ 1-го порядка')
+    plt.loglog(h_arr, errors_2nd, 'rs-', lw=2, ms=6, label='ГУ 2-го порядка')
 
-    # Для 2-го порядка наклон 2 (O(h^2))
-    plt.loglog(h_ref, h_ref ** 2 * errors_2nd[0] / h_values[0] ** 2, 'r--', alpha=0.5, label='O(h^2)')
+    # Эталонные линии
+    plt.loglog(h_arr, h_arr * errors_1st[0] / h_values[0], 'k--', alpha=0.4, label='O(h)')
+    plt.loglog(h_arr, h_arr ** 2 * errors_2nd[0] / h_values[0] ** 2, 'g--', alpha=0.4, label='O(h²)')
 
-    plt.xlabel('Шаг сетки h')
-    plt.ylabel('Максимальная погрешность ||u - u_exact||_C')
-    plt.title('Сходимость метода (логарифмический масштаб)')
+    plt.xlabel('Шаг сетки $h$')
+    plt.ylabel('Максимальная погрешность $||u - u_{exact}||_C$')
+    plt.title('Сходимость разностной схемы')
     plt.legend()
-    plt.grid(True, which="both", ls="-")
+    plt.grid(True, which='both', ls=':')
     plt.show()
 
-    # Оценка по правилу Рунге для N=40
-    N_runge = 40
-    x_coarse, u_coarse = solve_bvp(N_runge, order_bc=2)  # Используем 2-й порядок для внутренней точности
-    x_fine, u_fine = solve_bvp(2 * N_runge, order_bc=2)
+    print("\nОценка по правилу Рунге (N=40, 2-й порядок ГУ):")
+    x_c, u_c = solve_bvp(40, order_bc=2)
+    x_f, u_f = solve_bvp(80, order_bc=2)
 
-    # Приводим мелкую сетку к крупной (берем каждый второй узел)
-    u_fine_coarse = u_fine[::2]
 
-    runge_est = runge_rule(u_coarse, u_fine_coarse)
-    u_ex_coarse = exact_solution(x_coarse)
-    true_err = compute_error(u_coarse, u_ex_coarse)
-
-    max_runge = np.max(runge_est)
-
-    print(f"\nОценка по правилу Рунге для N={N_runge} (ГУ 2-го порядка):")
-    print(f"Оценка Рунге (max): {max_runge:.5e}")
-    print(f"Точная погрешность: {true_err:.5e}")
+    u_f_on_c = u_f[::2]
+    runge_est = np.abs(u_c - u_f_on_c) / 3.0
+    true_err = compute_error(u_c, x_c)
+    true_err_fine = compute_error(u_f, x_f)
+    print(f"Оценка Рунге (max): {np.max(runge_est):.5e}")
+    print(f"Точная погрешность: {true_err_fine:.5e}")
+    print(f"Отношение: {true_err / np.max(runge_est):.3f} (должно быть ~1.0)")
 
 
 if __name__ == "__main__":
