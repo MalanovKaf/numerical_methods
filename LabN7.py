@@ -21,7 +21,7 @@ def source_term(x, t):
 
 def boundary_condition_left(t):
     """
-    Граничное условие на левой границе (Неймана):
+    Граничное условие на левой границе:
     u_x(0,t) = t
     """
     return t
@@ -29,7 +29,7 @@ def boundary_condition_left(t):
 
 def boundary_condition_right(t):
     """
-    Граничное условие на правой границе (смешанное):
+    Граничное условие на правой границе:
     u(1,t) + u_x(1,t) = 3 + sinh(t) + t*cosh(t)
     """
     return 3 + np.sinh(t) + t * np.cosh(t)
