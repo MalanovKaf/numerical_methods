@@ -198,62 +198,45 @@ def convergence_study_x():
 
 
 def convergence_study_t():
-    """Исследование сходимости по t — финальная версия"""
-
+    """
+    Исследование сходимости по t
+    """
     print("\n=== Исследование сходимости по временной переменной t ===")
-    print(f"{'Nt':<6} {'tau':<12} {'h':<12} {'Error':<18} {'Ratio':<10}")
-    print("-" * 75)
-
-    # УМЕНЬШАЕМ h ЕЩЁ СИЛЬНЕЕ
-    Nx_fixed = 3200  # h = 0.0003125
+    print("h закреплено, tau меняется")
+    print(f"{'Nt':<5} {'tau':<10} {'h':<10} {'Error (C-norm)':<15} {'Ratio':<10}")
+    print("-" * 60)
+    Nx_fixed = 200
     T = 1.0
     h = 1.0 / Nx_fixed
-    tau_max = h * np.sqrt(2)
-
-    print(f"h = {h:.7f}, tau_max = {tau_max:.7f}\n")
-
-    # Nt подбираем так, чтобы tau <= tau_max
-    Nt_values = [800, 1600, 3200, 6400]  # tau = 0.00125, 0.000625, ...
-
+    Nt_values = [20, 40, 80, 160]
     errors = []
     for Nt in Nt_values:
         tau = T / Nt
-        if tau > tau_max:
-            continue
-
         x, t, u = solve_wave_equation(Nx_fixed, Nt, T)
         error, _ = compute_error(u, x, t)
         err_norm = chebyshev_norm(error)
         errors.append(err_norm)
-
         if len(errors) > 1:
             ratio = errors[-2] / errors[-1]
-            print(f"{Nt:<6} {tau:<12.7f} {h:<12.7f} {err_norm:<18.6e} {ratio:<10.3f}")
+            print(f"{Nt:<5} {tau:<10.6f} {h:<10.6f} {err_norm:<15.6e} {ratio:<10.3f}")
         else:
-            print(f"{Nt:<6} {tau:<12.7f} {h:<12.7f} {err_norm:<18.6e}")
-
-    # Построение графика
-    tau_values = [T / Nt for Nt in Nt_values if T / Nt <= tau_max]
-    errors = errors[:len(tau_values)]  # Обрезаем, если были пропуски
-
-    if len(tau_values) >= 2:
-        plt.figure(figsize=(8, 6))
-        plt.loglog(tau_values, errors, 's-', linewidth=2, markersize=8, label='Численная погрешность')
-
-        # Эталонная линия O(tau^2)
-        tau_ref = np.array(tau_values)
-        plt.loglog(tau_ref, tau_ref ** 2 * errors[0] / tau_values[0] ** 2, '--',
-                   label='O(τ²)', alpha=0.5)
-
-        plt.xlabel('Шаг по времени τ')
-        plt.ylabel('Норма погрешности (C-норма)')
-        plt.title('Сходимость по временной переменной t')
-        plt.legend()
-        plt.grid(True, which='both', alpha=0.3)
-        plt.tight_layout()
-        plt.show()
-
-    return [T/Nt for Nt in Nt_values if T/Nt <= tau_max], errors
+            print(f"{Nt:<5} {tau:<10.6f} {h:<10.6f} {err_norm:<15.6e}")
+    # Построение графика сходимости
+    tau_values = [T / Nt for Nt in Nt_values]
+    plt.figure(figsize=(8, 6))
+    plt.loglog(tau_values, errors, 's-', linewidth=2, markersize=8, label='Численная погрешность')
+    # Эталонная линия O(tau^2)
+    tau_ref = np.array(tau_values)
+    plt.loglog(tau_ref, tau_ref ** 2 * errors[0] / tau_values[0] ** 2, '--',
+               label='O(τ^2)', alpha=0.5)
+    plt.xlabel('Шаг по времени τ')
+    plt.ylabel('Норма погрешности (C-норма)')
+    plt.title('Сходимость по временной переменной t')
+    plt.legend()
+    plt.grid(True, which='both', alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+    return tau_values, errors
 
 
 def print_formulas():

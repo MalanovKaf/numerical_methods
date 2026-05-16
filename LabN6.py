@@ -136,7 +136,7 @@ def main():
     true_err_fine = compute_error(u_f, x_f)
     print(f"Оценка Рунге (max): {np.max(runge_est):.5e}")
     print(f"Точная погрешность: {true_err_fine:.5e}")
-    print(f"Отношение: {true_err / np.max(runge_est):.3f}")
+    print(f"Отношение: {true_err_fine / np.max(runge_est):.3f}")
 
 
 if __name__ == "__main__":
