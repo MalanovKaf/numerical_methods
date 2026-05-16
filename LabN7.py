@@ -198,33 +198,27 @@ def convergence_study_x():
 
 
 def convergence_study_t():
-    """Исследование сходимости по t (исправленная версия)"""
+    """Исследование сходимости по t — финальная версия"""
 
     print("\n=== Исследование сходимости по временной переменной t ===")
-    print("h закреплено (достаточно малое), tau меняется")
-    print(f"{'Nt':<5} {'tau':<12} {'h':<12} {'Error (C-norm)':<18} {'Ratio':<10}")
+    print(f"{'Nt':<6} {'tau':<12} {'h':<12} {'Error':<18} {'Ratio':<10}")
     print("-" * 75)
 
-    # УМЕНЬШАЕМ h, чтобы пространственная ошибка была << временной
-    Nx_fixed = 800  # Было 200 → стало 800 (h = 0.00125 вместо 0.005)
+    # УМЕНЬШАЕМ h ЕЩЁ СИЛЬНЕЕ
+    Nx_fixed = 3200  # h = 0.0003125
     T = 1.0
     h = 1.0 / Nx_fixed
-
-    # Проверяем условие CFL: tau <= h * sqrt(2)
     tau_max = h * np.sqrt(2)
-    print(f"h = {h:.6f}, максимально допустимый tau = {tau_max:.6f}\n")
 
-    # Выбираем Nt так, чтобы tau <= tau_max
-    Nt_values = [200, 400, 800, 1600]  # tau = 0.005, 0.0025, 0.00125, 0.000625
+    print(f"h = {h:.7f}, tau_max = {tau_max:.7f}\n")
+
+    # Nt подбираем так, чтобы tau <= tau_max
+    Nt_values = [800, 1600, 3200, 6400]  # tau = 0.00125, 0.000625, ...
 
     errors = []
-
     for Nt in Nt_values:
         tau = T / Nt
-
-        # Дополнительная проверка CFL
         if tau > tau_max:
-            print(f"⚠️  Nt={Nt}: tau={tau:.6f} > tau_max={tau_max:.6f} — пропускаем")
             continue
 
         x, t, u = solve_wave_equation(Nx_fixed, Nt, T)
@@ -234,9 +228,9 @@ def convergence_study_t():
 
         if len(errors) > 1:
             ratio = errors[-2] / errors[-1]
-            print(f"{Nt:<5} {tau:<12.6f} {h:<12.6f} {err_norm:<18.6e} {ratio:<10.3f}")
+            print(f"{Nt:<6} {tau:<12.7f} {h:<12.7f} {err_norm:<18.6e} {ratio:<10.3f}")
         else:
-            print(f"{Nt:<5} {tau:<12.6f} {h:<12.6f} {err_norm:<18.6e}")
+            print(f"{Nt:<6} {tau:<12.7f} {h:<12.7f} {err_norm:<18.6e}")
 
     # Построение графика
     tau_values = [T / Nt for Nt in Nt_values if T / Nt <= tau_max]
@@ -259,7 +253,7 @@ def convergence_study_t():
         plt.tight_layout()
         plt.show()
 
-    return tau_values, errors
+    return [T/Nt for Nt in Nt_values if T/Nt <= tau_max], errors
 
 
 def print_formulas():
